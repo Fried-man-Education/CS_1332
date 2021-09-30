@@ -1,16 +1,19 @@
 import java.util.ArrayList;
+import java.util.stream.IntStream;
+
+import static java.util.Objects.isNull;
 
 /**
  * Your implementation of a MaxHeap.
  *
- * @author YOUR NAME HERE
+ * @author Andrew Friedman
  * @version 1.0
- * @userid YOUR USER ID HERE (i.e. gburdell3)
- * @GTID YOUR GT ID HERE (i.e. 900000000)
+ * @userid afriedman38
+ * @GTID 903506792
  *
- * Collaborators: LIST ALL COLLABORATORS YOU WORKED WITH HERE
+ * Collaborators: n/a
  *
- * Resources: LIST ALL NON-COURSE RESOURCES YOU CONSULTED HERE
+ * Resources: n/a
  */
 public class MaxHeap<T extends Comparable<? super T>> {
 
@@ -34,7 +37,8 @@ public class MaxHeap<T extends Comparable<? super T>> {
      * The backing array should have an initial capacity of INITIAL_CAPACITY.
      */
     public MaxHeap() {
-
+        backingArray = (T[]) new Comparable[INITIAL_CAPACITY];
+        size = 0;
     }
 
     /**
@@ -61,7 +65,34 @@ public class MaxHeap<T extends Comparable<? super T>> {
      *                                            is null
      */
     public MaxHeap(ArrayList<T> data) {
+        assert !isNull(data) : "cannot create heap: no data provided";
+        backingArray = (T[]) new Comparable[data.size() * 2 + 1];
 
+
+        for (int i = 0, dataSize = data.size(), counter = 1; i < dataSize; i++) {
+            T element = data.get(i);
+            assert !isNull(element) : "cannot create heap: null data provided";
+            if (backingArray.length == ++size) {
+                resize();
+            }
+            backingArray[counter++] = element;
+        }
+
+        for (int i = size >> 1; i > 0; i--) {
+            int j = i;
+            while (j <= size >> 1) {
+                int maxChild = findMaxChild(j);
+
+                if (backingArray[j].compareTo(backingArray[maxChild]) < 0) {
+                    T temp  = backingArray[maxChild];
+                    backingArray[maxChild] = backingArray[j];
+                    backingArray[j] = temp;
+                } else {
+                    break;
+                }
+                j = maxChild;
+            }
+        }
     }
 
     /**
@@ -75,7 +106,46 @@ public class MaxHeap<T extends Comparable<? super T>> {
      * @throws java.lang.IllegalArgumentException if data is null
      */
     public void add(T data) {
+        assert !isNull(data) : "data is null";
 
+        if (backingArray.length == ++size) {
+            resize();
+        }
+
+        backingArray[size] = data;
+
+        int i = size;
+        while (i > 1) {
+            int root = i >> 1;
+            int maxChild = findMaxChild(i >> 1);
+
+            if (backingArray[root].compareTo(backingArray[maxChild]) < 0) {
+                backingArray[i] = backingArray[root];
+                backingArray[root] = data;
+            }
+            i >>= 1;
+        }
+    }
+
+    /**
+     * Helper method to resize backingArray when size of heap equals size of backing array.
+     */
+    private void resize() {
+        T[] temp = (T[]) new Comparable[(backingArray.length << 1)];
+        IntStream.range(0, backingArray.length).forEachOrdered(i -> temp[i] = backingArray[i]);
+        backingArray = temp;
+    }
+
+    /**
+     * Helper method to find max child of root index.
+     * @param rootIndex index to find max child of
+     * @return index of max child
+     */
+    private int findMaxChild(int rootIndex) {
+        return (rootIndex << 1) + 1 >= backingArray.length
+                || backingArray[(rootIndex << 1) + 1] == null
+                || backingArray[(rootIndex << 1)].compareTo(backingArray[(rootIndex << 1) + 1]) > 0
+                ? rootIndex << 1 : (rootIndex << 1) + 1;
     }
 
     /**
@@ -89,7 +159,22 @@ public class MaxHeap<T extends Comparable<? super T>> {
      * @throws java.util.NoSuchElementException if the heap is empty
      */
     public T remove() {
-        return null;
+        assert size != 0 : "cannot remove: heap is empty";
+
+        T removed = backingArray[1];
+        backingArray[1] = backingArray[size];
+        backingArray[size--] = null;
+
+        int maxChild = findMaxChild(1);
+        for (int tempRoot = 1; tempRoot <= size >> 1; tempRoot = maxChild, maxChild = findMaxChild(tempRoot)) {
+            if (backingArray[tempRoot].compareTo(backingArray[maxChild]) < 0) {
+                T temp  = backingArray[maxChild];
+                backingArray[maxChild] = backingArray[tempRoot];
+                backingArray[tempRoot] = temp;
+            }
+        }
+
+        return removed;
     }
 
     /**
@@ -99,7 +184,8 @@ public class MaxHeap<T extends Comparable<? super T>> {
      * @throws java.util.NoSuchElementException if the heap is empty
      */
     public T getMax() {
-        return null;
+        assert size != 0 : "cannot return max value: heap is empty";
+        return backingArray[1];
     }
 
     /**
@@ -108,7 +194,7 @@ public class MaxHeap<T extends Comparable<? super T>> {
      * @return true if empty, false otherwise
      */
     public boolean isEmpty() {
-        return false;
+        return size == 0;
     }
 
     /**
@@ -118,7 +204,8 @@ public class MaxHeap<T extends Comparable<? super T>> {
      * resets the size.
      */
     public void clear() {
-        
+        backingArray = (T[]) new Comparable[INITIAL_CAPACITY];
+        size = 0;
     }
 
     /**
