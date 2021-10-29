@@ -1,13 +1,16 @@
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Objects;
 import java.util.Random;
+import java.util.stream.IntStream;
 
 /**
  * Your implementation of various sorting algorithms.
  *
- * @author YOUR NAME HERE
+ * @author Andrew Friedman
  * @version 1.0
- * @userid YOUR USER ID HERE (i.e. gburdell3)
- * @GTID YOUR GT ID HERE (i.e. 900000000)
+ * @userid afriedman38
+ * @GTID 903506792
  *
  * Collaborators: LIST ALL COLLABORATORS YOU WORKED WITH HERE
  *
@@ -37,7 +40,19 @@ public class Sorting {
      *                                            null
      */
     public static <T> void insertionSort(T[] arr, Comparator<T> comparator) {
+        if (Objects.isNull(arr)) {
+            throw new IllegalArgumentException("Array can't be null");
+        } else if (Objects.isNull(comparator)) {
+            throw new IllegalArgumentException("Comparator can't be null");
+        }
 
+        for (int n = 0; n < arr.length - 1; n++) {
+            for (int i = n + 1; i != 0 && comparator.compare(arr[i], arr[i - 1]) < 0; i--) {
+                T temp = arr[i];
+                arr[i] = arr[i - 1];
+                arr[i - 1] = temp;
+            }
+        }
     }
 
     /**
@@ -64,7 +79,37 @@ public class Sorting {
      *                                            null
      */
     public static <T> void cocktailSort(T[] arr, Comparator<T> comparator) {
+        if (Objects.isNull(arr)) {
+            throw new IllegalArgumentException("Array can't be null");
+        } else if (Objects.isNull(comparator)) {
+            throw new IllegalArgumentException("Comparator can't be null");
+        }
 
+        boolean swapsMade = true;
+        for (int startIdx = 0, endIdx = arr.length - 1; swapsMade;) {
+            swapsMade = false;
+            for (int i = startIdx, lastSwappedEnd = endIdx; i < lastSwappedEnd; i++) {
+                if (comparator.compare(arr[i], arr[i + 1]) > 0) {
+                    T temp = arr[i];
+                    arr[i] = arr[i + 1];
+                    arr[i + 1] = temp;
+                    swapsMade = true;
+                    endIdx = i;
+                }
+            }
+            if (swapsMade) {
+                swapsMade = false;
+                for (int i = endIdx, lastSwappedStart = startIdx; i > lastSwappedStart; i--) {
+                    if (comparator.compare(arr[i - 1], arr[i]) > 0) {
+                        T temp = arr[i];
+                        arr[i] = arr[i - 1];
+                        arr[i - 1] = temp;
+                        swapsMade = true;
+                        startIdx = i;
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -97,7 +142,59 @@ public class Sorting {
      *                                            null
      */
     public static <T> void mergeSort(T[] arr, Comparator<T> comparator) {
+        if (Objects.isNull(arr)) {
+            throw new IllegalArgumentException("Array can't be null");
+        } else if (Objects.isNull(comparator)) {
+            throw new IllegalArgumentException("Comparator can't be null");
+        }
 
+        if (arr.length <= 1) {
+            return;
+        }
+
+        int leftCap = arr.length / 2;
+        int rightCap = arr.length - leftCap;
+        T[] leftArr = (T[]) (new Object[leftCap]);
+        T[] rightArr = (T[]) (new Object[rightCap]);
+        for (int i = 0; i < leftCap; i++) {
+            leftArr[i] = arr[i];
+        }
+        for (int i = 0; i < rightCap; i++) {
+            rightArr[i] = arr[i + leftCap];
+        }
+
+        mergeSort(leftArr, comparator);
+        mergeSort(rightArr, comparator);
+
+        mergeSortHelper(leftArr, rightArr, arr, comparator);
+    }
+
+    /**
+     * Helper method for quick sort
+     *
+     * @param <T>        data type to sort
+     * @param arr        array that must be sorted after the method runs
+     * @param left       left index
+     * @param right      right index
+     * @param comparator Comparator used to compare the data in arr
+     */
+    private static <T> void mergeSortHelper(T[] left, T[] right, T[] arr, Comparator<T> comparator) {
+        int i = 0;
+        int j = 0;
+        while (j < right.length && i < left.length) {
+            if (comparator.compare(left[i], right[j]) <= 0) {
+                arr[i + j] = left[i++];
+            } else {
+                arr[i + j] = right[j++];
+            }
+        }
+
+        while (i < left.length) {
+            arr[i + j] = left[i++];
+        }
+        while (j < right.length) {
+            arr[i + j] = right[j++];
+        }
     }
 
     /**
@@ -142,7 +239,46 @@ public class Sorting {
      * @throws java.lang.IllegalArgumentException if the array is null
      */
     public static void lsdRadixSort(int[] arr) {
+        if (Objects.isNull(arr)) {
+            throw new IllegalArgumentException("Array can't be null");
+        }
 
+        ArrayList<Integer>[] buckets;
+        buckets = IntStream.range(0, 19).<ArrayList<Integer>>mapToObj(i -> new ArrayList<>()).toArray(ArrayList[]::new);
+
+        int max = Math.abs(arr[0]);
+        for (int i = 1; i < arr.length; i++) {
+            if (Math.abs(arr[i]) > max) {
+                max = Math.abs(arr[i]);
+            }
+        }
+
+        int k;
+        for (k = 0; max > 0; k++) {
+            max /= 10;
+        }
+
+        for (int i = 0; i < k; i++) {
+            int i1 = 0;
+            while (i1 < arr.length) {
+                int value = arr[i1];
+                int currDigit = value;
+                for (int j = 0; j < i; j++) {
+                    currDigit /= 10;
+                }
+                currDigit %= 10;
+                buckets[currDigit + 9].add(value);
+                i1++;
+            }
+            int n = 0;
+            for (int j = 0, bucketsLength = buckets.length; j < bucketsLength; j++) {
+                ArrayList<Integer> bucket = buckets[j];
+                while (!bucket.isEmpty()) {
+                    arr[n++] = bucket.get(0);
+                    bucket.remove(0);
+                }
+            }
+        }
     }
 
     /**
@@ -183,6 +319,67 @@ public class Sorting {
      */
     public static <T> void quickSort(T[] arr, Comparator<T> comparator,
                                      Random rand) {
+        if (Objects.isNull(arr)) {
+            throw new IllegalArgumentException("Cannot sort null array");
+        } else if (Objects.isNull(comparator)) {
+            throw new IllegalArgumentException(
+                    "Cannot sort with null comparator");
+        } else if (Objects.isNull(rand)) {
+            throw new IllegalArgumentException(
+                    "Cannot sort with null random");
+        }
+        quickSortHelper(arr, 0, arr.length - 1, comparator, rand);
+    }
 
+    /**
+     * Helper method for quick sort
+     *
+     * @param <T>        data type to sort
+     * @param arr        array that must be sorted after the method runs
+     * @param left       left index
+     * @param right      right index
+     * @param comparator Comparator used to compare the data in arr
+     * @param rand       Random object used to select pivots
+     */
+    private static <T> void quickSortHelper(T[] arr, int left, int right,
+                                   Comparator<T> comparator, Random rand) {
+        if (left >= right) {
+            return;
+        }
+        int l = left + 1;
+        int r = right;
+        int pivot = rand.nextInt(right - left + 1) + left;
+        T p = arr[pivot];
+        arr[pivot] = arr[left];
+        arr[left] = p;
+        while (l <= r) {
+            while (l <= r) {
+                if (comparator.compare(arr[l], p) <= 0) {
+                    l++;
+                } else {
+                    break;
+                }
+            }
+            while (l < r) {
+                if (comparator.compare(arr[r], p) >= 0) {
+                    r--;
+                } else {
+                    break;
+                }
+            }
+            if (l == r) {
+                r--;
+            }
+            if (l < r) {
+                T temp = arr[l];
+                arr[l++] = arr[r];
+                arr[r--] = temp;
+            }
+        }
+        T temp = arr[r];
+        arr[r] = arr[left];
+        arr[left] = temp;
+        quickSortHelper(arr, left, r - 1, comparator, rand);
+        quickSortHelper(arr, r + 1, right, comparator, rand);
     }
 }
