@@ -1,13 +1,17 @@
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.IntStream;
 
 /**
  * Your implementations of various string searching algorithms.
  *
- * @author YOUR NAME HERE
+ * @author Andrew Friedman
  * @version 1.0
- * @userid YOUR USER ID HERE (i.e. gburdell3)
- * @GTID YOUR GT ID HERE (i.e. 900000000)
+ * @userid afriedman38
+ * @GTID 903506792
  *
  * Collaborators: LIST ALL COLLABORATORS YOU WORKED WITH HERE
  *
@@ -31,8 +35,45 @@ public class PatternMatching {
      * @throws java.lang.IllegalArgumentException if text or comparator is null
      */
     public static List<Integer> kmp(CharSequence pattern, CharSequence text,
-                                    CharacterComparator comparator) {
-
+                                       CharacterComparator comparator) {
+        if (Objects.isNull(comparator)) {
+            throw new IllegalArgumentException("null comparator not allowed...");
+        }
+        if (Objects.isNull(text)) {
+            throw new IllegalArgumentException("null text not allowed...");
+        }
+        if (Objects.isNull(pattern) || pattern.length() == 0) {
+            throw new IllegalArgumentException("Current pattern not allowed...");
+        }
+        List<Integer> tempList;
+        tempList = new ArrayList<>();
+        if (pattern.length() <= text.length()) {
+            int[] tempFail;
+            tempFail = buildFailureTable(pattern, comparator);
+            for (int i = 0, j = 0; i < text.length();) {
+                if (text.length() - i >= pattern.length() - j) {
+                    int x;
+                    x = comparator.compare(text.charAt(i), pattern.charAt(j));
+                    if (x != 0) {
+                        if (j != 0) {
+                            j = tempFail[j - 1];
+                        } else {
+                            i++;
+                        }
+                    } else {
+                        i++;
+                        if (++j == pattern.length()) {
+                            tempList.add(i - j);
+                            j = tempFail[j - 1];
+                        }
+                    }
+                } else {
+                    return tempList;
+                }
+            }
+            return tempList;
+        }
+        return tempList;
     }
 
     /**
@@ -65,7 +106,30 @@ public class PatternMatching {
      */
     public static int[] buildFailureTable(CharSequence pattern,
                                           CharacterComparator comparator) {
-
+        if (Objects.isNull(comparator)) {
+            throw new IllegalArgumentException("null comparator not allowed...");
+        }
+        if (Objects.isNull(pattern) || pattern.length() == 0) {
+            throw new IllegalArgumentException("Current pattern not allowed...");
+        }
+        int[] tempTable;
+        tempTable = new int[pattern.length()];
+        for (int i = 0, j = 1; j < pattern.length();) {
+            char x;
+            x = pattern.charAt(i);
+            char y;
+            y = pattern.charAt(j);
+            if (comparator.compare(x, y) != 0) {
+                if (i != 0) {
+                    i = tempTable[i - 1];
+                } else {
+                    tempTable[j++] = 0;
+                }
+            } else {
+                tempTable[j++] = i++ + 1;
+            }
+        }
+        return tempTable;
     }
 
     /**
@@ -87,9 +151,49 @@ public class PatternMatching {
      * @throws java.lang.IllegalArgumentException if text or comparator is null
      */
     public static List<Integer> boyerMoore(CharSequence pattern,
-                                           CharSequence text,
-                                           CharacterComparator comparator) {
-
+                                              CharSequence text,
+                                              CharacterComparator comparator) {
+        if (Objects.isNull(comparator)) {
+            throw new IllegalArgumentException("null comparator not allowed...");
+        }
+        if (Objects.isNull(text)) {
+            throw new IllegalArgumentException("null text not allowed...");
+        }
+        if (Objects.isNull(pattern) || pattern.length() == 0) {
+            throw new IllegalArgumentException("Current pattern not allowed...");
+        }
+        List<Integer> tempList;
+        tempList = new ArrayList<>();
+        if (text.length() >= pattern.length()) {
+            Map<Character, Integer> tempMap = buildLastTable(pattern);
+            for (int i = 0; i <= text.length() - pattern.length(); i += 0) {
+                if (pattern.length() + i > text.length()) {
+                    return tempList;
+                }
+                int j;
+                for (j = pattern.length() - 1; j >= 0 && comparator.compare(text.charAt(i + j),
+                        pattern.charAt(j)) == 0; j--) {
+                    assert true;
+                }
+                if (j != -1) {
+                    int k;
+                    if (!tempMap.containsKey(text.charAt(i + j))) {
+                        k = -1;
+                    } else {
+                        k = tempMap.get(text.charAt(i + j));
+                    }
+                    if (k >= j) {
+                        i++;
+                    } else {
+                        i = i + j - k;
+                    }
+                } else {
+                    tempList.add(i++);
+                }
+            }
+            return tempList;
+        }
+        return tempList;
     }
 
     /**
@@ -119,7 +223,15 @@ public class PatternMatching {
      * @throws java.lang.IllegalArgumentException if the pattern is null
      */
     public static Map<Character, Integer> buildLastTable(CharSequence pattern) {
-
+        if (Objects.isNull(pattern) || pattern.length() == 0) {
+            throw new IllegalArgumentException("Current pattern not allowed...");
+        }
+        Map<Character, Integer> tempMap = new HashMap<>();
+        int i = 0;
+        while (i < pattern.length()) {
+            tempMap.put(pattern.charAt(i), i++);
+        }
+        return tempMap;
     }
 
     /**
@@ -186,8 +298,94 @@ public class PatternMatching {
      * @throws java.lang.IllegalArgumentException if text or comparator is null
      */
     public static List<Integer> rabinKarp(CharSequence pattern,
-                                          CharSequence text,
-                                          CharacterComparator comparator) {
+                                             CharSequence text,
+                                             CharacterComparator comparator) {
+        if (Objects.isNull(comparator) || Objects.isNull(text)) {
+            throw new IllegalArgumentException("Comparator or text is null...");
+        }
+        if (pattern.length() == 0 || Objects.isNull(pattern)) {
+            throw new IllegalArgumentException("Pattern has zero length or is null...");
+        }
+        List<Integer> indexL;
+        indexL = new ArrayList<>();
+        if (pattern.length() <= text.length()) {
+            int hashP;
+            hashP = hasher(pattern);
+            int hashN;
+            hashN = hasher(text.subSequence(0, pattern.length()));
 
+            if (hashP == hashN && checker(pattern,
+                    text.subSequence(0, pattern.length()), comparator)) {
+                indexL.add(0);
+            }
+            int i = 1;
+            while (i < text.length() - pattern.length() + 1) {
+                hashN = (hashN - (text.charAt(i - 1)
+                        * pow(pattern.length() - 1)))
+                        * BASE + text.charAt(i + pattern.length() - 1);
+                if (hashN == hashP && checker(pattern,
+                        text.subSequence(i, i + pattern.length()), comparator)) {
+                    indexL.add(i);
+                }
+                i++;
+            }
+            return indexL;
+        }
+        return indexL;
+    }
+
+    /**
+     * Checks if text and pattern matches
+     *
+     * @param pattern string in a body of text
+     * @param text text where you search
+     * @param comparator comparator to use
+     * @return boolean for pattern and text matching
+     */
+    private static boolean checker(CharSequence pattern, CharSequence text,
+                                 CharacterComparator comparator) {
+        int i = 0;
+        while (i < pattern.length()) {
+            if (comparator.compare(pattern.charAt(i), text.charAt(i++)) != 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Math.pow() homemade
+     *
+     * @param exp the power to raise
+     * @return BASE^exp
+     */
+    private static int pow(int exp) {
+        int num;
+        num = 1;
+        if (exp != 0) {
+            if (exp != 1) {
+                num *= IntStream.rangeClosed(1, exp).map(i -> BASE).reduce(1, (a, b) -> a * b);
+            } else {
+                return BASE;
+            }
+        } else {
+            return 1;
+        }
+        return num;
+    }
+
+    /**
+     * Calculates hash
+     *
+     * @param text string to calculate
+     * @return hash value
+     */
+    private static int hasher(CharSequence text) {
+        int tmp = 0;
+        int i = 0;
+        while (i < text.length()) {
+            tmp += text.charAt(i) * pow(text.length() - 1 - i++);
+        }
+        return tmp;
     }
 }
