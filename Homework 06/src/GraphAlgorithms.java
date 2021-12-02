@@ -1,14 +1,20 @@
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.Set;
+
+import static java.util.Objects.isNull;
 
 /**
  * Your implementation of various graph algorithms.
  *
- * @author YOUR NAME HERE
+ * @author Andrew Friedman
  * @version 1.0
- * @userid YOUR USER ID HERE (i.e. gburdell3)
- * @GTID YOUR GT ID HERE (i.e. 900000000)
+ * @userid afriedman38
+ * @GTID 903506792
  *
  * Collaborators: LIST ALL COLLABORATORS YOU WORKED WITH HERE
  *
@@ -45,7 +51,37 @@ public class GraphAlgorithms {
      *                                  doesn't exist in the graph
      */
     public static <T> List<Vertex<T>> dfs(Vertex<T> start, Graph<T> graph) {
+        assert (!isNull(start) || !isNull(graph))
+                && graph.getAdjList().containsKey(start) : "args are null...";
 
+        HashSet<Vertex<T>> visited = new HashSet<>();
+        ArrayList<Vertex<T>> result = new ArrayList<>();
+
+        dfs(start, graph, visited, result);
+        return result;
+    }
+
+    /**
+     * dfs recursive helper method
+     *
+     * @param <T> the generic typing of the data
+     * @param vertex the vertex to begin the dfs on
+     * @param graph the graph to search through
+     * @param vs the set of visited vertexs
+     * @param result the list returned
+     */
+    private static <T> void dfs(Vertex<T> vertex, Graph<T> graph,
+                                Set<Vertex<T>> vs, List<Vertex<T>> result) {
+        result.add(vertex);
+        vs.add(vertex);
+
+        var getV = graph.getAdjList().get(vertex);
+        for (int i = 0, getSize = getV.size(); i < getSize; i++) {
+            var tempV = getV.get(i);
+            if (!vs.contains(tempV.getVertex())) {
+                dfs(tempV.getVertex(), graph, vs, result);
+            }
+        }
     }
 
     /**
@@ -82,7 +118,35 @@ public class GraphAlgorithms {
      */
     public static <T> Map<Vertex<T>, Integer> dijkstras(Vertex<T> start,
                                                         Graph<T> graph) {
+        assert !isNull(graph) : "graph is null...";
+        assert graph.getVertices().contains(start) : "graph has no start vertex...";
 
+        HashMap<Vertex<T>, Integer> mapH = new HashMap<>();
+        var adjL = graph.getAdjList();
+        PriorityQueue<VertexDistance<T>> pq = new PriorityQueue<>();
+        ArrayList<Vertex<T>> vList = new ArrayList<>();
+        adjL.keySet().forEach(vertex -> {
+            mapH.put(vertex, vertex.equals(start) ? 0 : Integer.MAX_VALUE);
+        });
+
+        pq.add(new VertexDistance<>(start, 0));
+
+        while (vList.size() < adjL.size() && !(pq.isEmpty())) {
+            var temp = pq.remove();
+            vList.add(temp.getVertex());
+            List<VertexDistance<T>> get = adjL.get(temp.getVertex());
+            for (int i = 0, getSize = get.size(); i < getSize; i++) {
+                var tempV = get.get(i);
+                int newD;
+                newD = temp.getDistance() + tempV.getDistance();
+                if (!vList.contains(tempV.getVertex()) && mapH.get(tempV.getVertex()) > newD) {
+                    mapH.put(tempV.getVertex(), newD);
+                    pq.add(new VertexDistance<>(tempV.getVertex(),
+                            newD));
+                }
+            }
+        }
+        return mapH;
     }
 
     /**
@@ -122,6 +186,37 @@ public class GraphAlgorithms {
      *                                  doesn't exist in the graph
      */
     public static <T> Set<Edge<T>> prims(Vertex<T> start, Graph<T> graph) {
+        assert !isNull(start) && !isNull(graph)
+                && graph.getVertices().contains(start)
+                : "args are null or graph has no start...";
 
+        HashSet<Vertex<T>> tempVS = new HashSet<>();
+        HashSet<Edge<T>> tempM = new HashSet<>();
+        var priQ = new PriorityQueue<Edge<T>>();
+        var edges = graph.getEdges();
+        var itr = edges.iterator();
+
+        while (itr.hasNext()) {
+            Edge<T> edge;
+            edge = itr.next();
+            if (edge.getU().equals(start)) {
+                priQ.add(edge);
+            }
+        }
+
+        tempVS.add(start);
+
+        while (!priQ.isEmpty() && tempVS.size() != graph.getVertices().size()) {
+            Edge<T> edge = priQ.remove();
+            if (!tempVS.contains(edge.getV())) {
+                tempVS.add(edge.getV());
+                tempM.add(edge);
+                tempM.add(new Edge<>(edge.getV(), edge.getU(), edge.getWeight()));
+                edges.stream().filter(ed -> ed.getU().equals(edge.getV())
+                        && !tempVS.contains(ed.getV())).forEachOrdered(priQ::add);
+            }
+        }
+
+        return tempM;
     }
 }
